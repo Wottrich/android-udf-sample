@@ -1,4 +1,4 @@
-package github.io.wottrich.myapplication.textfield
+package github.io.wottrich.composeunidirectionaldataflow.textfield
 
 data class TextFieldState(
     val text: String?,

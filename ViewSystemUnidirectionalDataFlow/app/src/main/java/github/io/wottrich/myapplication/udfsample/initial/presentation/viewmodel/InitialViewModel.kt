@@ -37,7 +37,7 @@ class InitialViewModel(
     }
 
     fun onTextChanged(text: String) {
-        _uiState.postValue(getUiState(text))
+        _uiState.postValue(uiState.value.getCurrentState(text))
     }
 
     fun onConfirmButtonClicked() {
@@ -47,7 +47,9 @@ class InitialViewModel(
                 // validate minimal typed rule
                 if (hasMinimalTypedLength(typedText)) {
                     // if valid post loading
-                    _uiState.postValue(uiState.value?.copy(isLoading = true))
+                    val loadingState = uiState.value?.copy(isLoading = true)
+                    val newState = loadingState.getCurrentState(typedText)
+                    _uiState.postValue(newState)
                     // and then you will emit action to queue
                     pendingActions.emit(InitialUiActions.ConfirmName)
                 } else {
@@ -63,11 +65,24 @@ class InitialViewModel(
         }
     }
 
-    private fun getUiState(typedText: String): InitialUiState? {
-        val isLoading = uiState.value?.isLoading == true
+    private fun saveUser() {
+        viewModelScope.launch {
+            val typedText = uiState.value?.textFieldState?.text.orEmpty()
+            uiState.value?.name?.let { userName ->
+                getSaveUserUseCase(userName)
+                val loadingState = uiState.value?.copy(isLoading = false)
+                val newState = loadingState.getCurrentState(typedText)
+                _uiState.postValue(newState)
+                _uiEffects.postValue(InitialUiEffects.NextScreen)
+            }
+        }
+    }
+
+    private fun InitialUiState?.getCurrentState(typedText: String): InitialUiState? {
+        val isLoading = this?.isLoading == true
         val isConfirmButtonEnabled = typedText.isNotEmpty() && !isLoading
         // It's important use uiState to not lost other values
-        return uiState.value?.copy(
+        return this?.copy(
             name = typedText,
             isConfirmButtonEnabled = isConfirmButtonEnabled,
             textFieldState = TextFieldState(
@@ -76,16 +91,6 @@ class InitialViewModel(
                 isEnabled = !isLoading
             )
         )
-    }
-
-    private fun saveUser() {
-        viewModelScope.launch {
-            uiState.value?.name?.let { userName ->
-                getSaveUserUseCase(userName)
-                _uiState.postValue(uiState.value?.copy(isLoading = false))
-                _uiEffects.postValue(InitialUiEffects.NextScreen)
-            }
-        }
     }
 
     private fun getErrorMessageIfNeeded(typedText: String): String? {
@@ -97,7 +102,8 @@ class InitialViewModel(
 
     companion object {
         private const val MINIMAL_TYPED_LENGTH = 3
-        private const val MINIMAL_TYPED_LENGTH_ERROR_MESSAGE = "Type a name with more than 3 characters"
+        private const val MINIMAL_TYPED_LENGTH_ERROR_MESSAGE =
+            "Type a name with more than 3 characters"
 
         /* make a factory of your ViewModel or provider it using a DI */
         fun factory(saveUserUseCase: SaveUserUseCase): ViewModelProvider.Factory {

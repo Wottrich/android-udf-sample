@@ -83,6 +83,7 @@ class InitialFragment : Fragment() {
 
     private fun handleTextFieldState(textFieldState: TextFieldState) {
         binding?.textInputLayout?.apply {
+            isEnabled = textFieldState.isEnabled
             isErrorEnabled = textFieldState.errorMessage != null
             error = textFieldState.errorMessage
         }

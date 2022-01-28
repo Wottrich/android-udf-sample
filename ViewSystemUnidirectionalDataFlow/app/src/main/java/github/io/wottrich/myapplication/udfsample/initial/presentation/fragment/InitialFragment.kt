@@ -42,7 +42,7 @@ class InitialFragment : Fragment() {
     }
 
     private fun observeEffects() {
-        viewModel.uiEffects.observe(viewLifecycleOwner) { effect ->
+        viewModel.uiDispatcher.effects.observe(viewLifecycleOwner) { effect ->
             when (effect) {
                 InitialUiEffects.NextScreen -> binding?.root?.let { rootView ->
                     Snackbar.make(
@@ -70,7 +70,7 @@ class InitialFragment : Fragment() {
     }
 
     private fun observeStates() {
-        viewModel.uiState.observe(viewLifecycleOwner) { state ->
+        viewModel.uiDispatcher.state.observe(viewLifecycleOwner) { state ->
             handleButtonState(state.isConfirmButtonEnabled)
             handleTextFieldState(state.textFieldState)
             handleLoadingState(state.isLoading)

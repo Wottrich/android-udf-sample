@@ -1,5 +1,6 @@
 package github.io.wottrich.myapplication.udfsample.initial.presentation.viewmodel
 
+import androidx.annotation.MainThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -14,21 +15,75 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
+// Ver o nome
+// Ver como ficaria nos testes
+// Ver se a galera curtiu
+open class UiDispatcher<Actions, Effects, State>(initialState: State?) {
+
+    protected open val pendingActions = MutableSharedFlow<Actions>()
+
+    private val _effects = SingleLiveEvent<Effects>()
+    val effects: LiveData<Effects> = _effects
+
+    private val _state: SingleLiveEvent<State> = getSingleLiveEventState(initialState)
+    val state: LiveData<State> = _state
+
+    @MainThread
+    protected open fun emitEffect(effect: Effects) {
+        _effects.setValue(effect)
+    }
+
+    protected open fun postEffect(effect: Effects?) {
+        _effects.postValue(effect)
+    }
+
+    @MainThread
+    protected open fun emitState(state: State) {
+        _state.setValue(state)
+    }
+
+    protected open fun postState(state: State?) {
+        _state.postValue(state)
+    }
+
+    private fun getSingleLiveEventState(initialState: State?): SingleLiveEvent<State> {
+        return if (initialState != null) SingleLiveEvent(initialState) else SingleLiveEvent()
+    }
+}
+
+class MutableUiDispatcher<Actions, Effects, State>(initialState: State? = null) : UiDispatcher<Actions, Effects, State>(initialState) {
+    public override val pendingActions = super.pendingActions
+
+    public override fun emitEffect(effect: Effects) {
+        super.emitEffect(effect)
+    }
+
+    public override fun postEffect(effect: Effects?) {
+        super.postEffect(effect)
+    }
+
+    public override fun emitState(state: State) {
+        super.emitState(state)
+    }
+
+    public override fun postState(state: State?) {
+        super.postState(state)
+    }
+}
+
+private typealias MutableInitialUiDispatcher = MutableUiDispatcher<InitialUiActions, InitialUiEffects, InitialUiState>
+private typealias InitialUiDispatcher = UiDispatcher<InitialUiActions, InitialUiEffects, InitialUiState>
+
 class InitialViewModel(
-    private val getSaveUserUseCase: SaveUserUseCase
+    private val getSaveUserUseCase: SaveUserUseCase,
+    private val _uiDispatcher: MutableInitialUiDispatcher = MutableUiDispatcher(InitialUiState.Initial)
 ) : ViewModel() {
 
-    private val pendingActions = MutableSharedFlow<InitialUiActions>()
-
-    private val _uiEffects = SingleLiveEvent<InitialUiEffects>()
-    val uiEffects: LiveData<InitialUiEffects> = _uiEffects
-
-    private val _uiState = SingleLiveEvent<InitialUiState>(InitialUiState.Initial)
-    val uiState: LiveData<InitialUiState> = _uiState
+    val uiDispatcher: InitialUiDispatcher = _uiDispatcher
 
     init {
         viewModelScope.launch {
-            pendingActions.collect {
+            _uiDispatcher.pendingActions.collect {
                 when (it) {
                     InitialUiActions.ConfirmName -> saveUser()
                 }
@@ -37,24 +92,24 @@ class InitialViewModel(
     }
 
     fun onTextChanged(text: String) {
-        _uiState.postValue(uiState.value.getCurrentState(text))
+        _uiDispatcher.postState(uiDispatcher.state.value.getCurrentState(text))
     }
 
     fun onConfirmButtonClicked() {
         viewModelScope.launch {
             // get current typed text
-            uiState.value?.textFieldState?.text?.let { typedText ->
+            uiDispatcher.state.value?.textFieldState?.text?.let { typedText ->
                 // validate minimal typed rule
                 if (hasMinimalTypedLength(typedText)) {
                     // if valid post loading
-                    val loadingState = uiState.value?.copy(isLoading = true)
+                    val loadingState = uiDispatcher.state.value?.copy(isLoading = true)
                     val newState = loadingState.getCurrentState(typedText)
-                    _uiState.postValue(newState)
+                    _uiDispatcher.postState(newState)
                     // and then you will emit action to queue
-                    pendingActions.emit(InitialUiActions.ConfirmName)
+                    _uiDispatcher.pendingActions.emit(InitialUiActions.ConfirmName)
                 } else {
                     // if invalid post a SnackBar with error
-                    _uiEffects.postValue(
+                    _uiDispatcher.postEffect(
                         InitialUiEffects.SnackBarError(
                             MINIMAL_TYPED_LENGTH_ERROR_MESSAGE,
                             Throwable() // Throwable to log in analytics or something else
@@ -67,13 +122,13 @@ class InitialViewModel(
 
     private fun saveUser() {
         viewModelScope.launch {
-            val typedText = uiState.value?.textFieldState?.text.orEmpty()
-            uiState.value?.name?.let { userName ->
+            val typedText = uiDispatcher.state.value?.textFieldState?.text.orEmpty()
+            uiDispatcher.state.value?.name?.let { userName ->
                 getSaveUserUseCase(userName)
-                val loadingState = uiState.value?.copy(isLoading = false)
+                val loadingState = uiDispatcher.state.value?.copy(isLoading = false)
                 val newState = loadingState.getCurrentState(typedText)
-                _uiState.postValue(newState)
-                _uiEffects.postValue(InitialUiEffects.NextScreen)
+                _uiDispatcher.postState(newState)
+                _uiDispatcher.postEffect(InitialUiEffects.NextScreen)
             }
         }
     }

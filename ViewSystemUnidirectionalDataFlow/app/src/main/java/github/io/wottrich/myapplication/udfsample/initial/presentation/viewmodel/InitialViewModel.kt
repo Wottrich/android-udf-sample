@@ -1,10 +1,7 @@
 package github.io.wottrich.myapplication.udfsample.initial.presentation.viewmodel
 
 import androidx.annotation.MainThread
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiActions
 import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiEffects
 import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiState
@@ -25,7 +22,7 @@ open class UiDispatcher<Actions, Effects, State>(initialState: State?) {
     private val _effects = SingleLiveEvent<Effects>()
     val effects: LiveData<Effects> = _effects
 
-    private val _state: SingleLiveEvent<State> = getSingleLiveEventState(initialState)
+    private val _state: MutableLiveData<State> = MutableLiveData(initialState)
     val state: LiveData<State> = _state
 
     @MainThread
@@ -44,10 +41,6 @@ open class UiDispatcher<Actions, Effects, State>(initialState: State?) {
 
     protected open fun postState(state: State?) {
         _state.postValue(state)
-    }
-
-    private fun getSingleLiveEventState(initialState: State?): SingleLiveEvent<State> {
-        return if (initialState != null) SingleLiveEvent(initialState) else SingleLiveEvent()
     }
 }
 

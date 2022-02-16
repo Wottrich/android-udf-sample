@@ -1,9 +1,6 @@
 package github.io.wottrich.myapplication.udfsample.initial.presentation.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiActions
 import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiEffects
 import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiState
@@ -23,7 +20,7 @@ class InitialViewModel(
     private val _uiEffects = SingleLiveEvent<InitialUiEffects>()
     val uiEffects: LiveData<InitialUiEffects> = _uiEffects
 
-    private val _uiState = SingleLiveEvent<InitialUiState>(InitialUiState.Initial)
+    private val _uiState = MutableLiveData<InitialUiState>(InitialUiState.Initial)
     val uiState: LiveData<InitialUiState> = _uiState
 
     init {

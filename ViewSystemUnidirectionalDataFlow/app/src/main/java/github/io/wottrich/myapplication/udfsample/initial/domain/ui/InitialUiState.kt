@@ -5,12 +5,21 @@ import github.io.wottrich.myapplication.textfield.TextFieldState
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-class MutableStateLiveData<T: Any>(initialValue: T) : StateLiveData<T>(initialValue) {
+class MutableStateLiveData<T : Any>(initialValue: T) : StateLiveData<T>(initialValue) {
+    private var state: T = initialValue
+
+    @Synchronized
+    fun getCurrentState(): T = state
+
+    @Synchronized
     public override fun postValue(value: T) {
+        state = value
         super.postValue(value)
     }
 
+    @Synchronized
     public override fun setValue(value: T) {
+        state = value
         super.setValue(value)
     }
 }
@@ -30,16 +39,23 @@ abstract class ObservableState<T : Any>(initialState: T) {
         private val setter: T.(R) -> T
     ) : ReadWriteProperty<ObservableState<T>, R> {
         override fun getValue(thisRef: ObservableState<T>, property: KProperty<*>): R {
-            return thisRef.state.value.getter()
+            synchronized(thisRef) {
+                return thisRef._state.getCurrentState().getter()
+            }
         }
 
         override fun setValue(thisRef: ObservableState<T>, property: KProperty<*>, value: R) {
-            thisRef._state.value = thisRef.state.value.setter(value)
+            synchronized(thisRef) {
+                thisRef._state.postValue(thisRef._state.getCurrentState().setter(value))
+            }
         }
     }
+
+
 }
 
-class InitialUiStateLiveDataImpl(initialValue: InitialUiState) : ObservableState<InitialUiState>(initialValue) {
+class InitialUiStateLiveDataImpl(initialValue: InitialUiState) :
+    ObservableState<InitialUiState>(initialValue) {
     var isLoading: Boolean by StateChanger(InitialUiState::isLoading) { copy(isLoading = it) }
     var isConfirmButtonEnabled: Boolean by StateChanger(InitialUiState::isConfirmButtonEnabled) {
         copy(isConfirmButtonEnabled = it)

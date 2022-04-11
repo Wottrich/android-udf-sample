@@ -10,26 +10,25 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
-import github.io.wottrich.myapplication.databinding.FragmentInitialBinding
-import github.io.wottrich.myapplication.udfsample.initial.domain.ui.InitialUiEffects
-import github.io.wottrich.myapplication.udfsample.initial.domain.usecases.SaveUserUseCase
-import github.io.wottrich.myapplication.udfsample.initial.presentation.viewmodel.InitialViewModel
+import github.io.wottrich.myapplication.databinding.FragmentSaveUserBinding
 import github.io.wottrich.myapplication.textfield.TextFieldState
+import github.io.wottrich.myapplication.udfsample.initial.domain.ui.SaveUserUiEffects
+import github.io.wottrich.myapplication.udfsample.initial.domain.usecases.SaveUserUseCase
+import github.io.wottrich.myapplication.udfsample.initial.presentation.viewmodel.SaveUserViewModel
 
-class InitialFragment : Fragment() {
+class SaveUserFragment : Fragment() {
 
-
-    private val viewModel: InitialViewModel by viewModels {
-        return@viewModels InitialViewModel.factory(SaveUserUseCase())
+    private val viewModel: SaveUserViewModel by viewModels {
+        return@viewModels SaveUserViewModel.factory(SaveUserUseCase())
     }
-    private var binding: FragmentInitialBinding? = null
+    private var binding: FragmentSaveUserBinding? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        binding = FragmentInitialBinding.inflate(inflater, container, false)
+        binding = FragmentSaveUserBinding.inflate(inflater, container, false)
         return binding?.root
     }
 
@@ -44,21 +43,21 @@ class InitialFragment : Fragment() {
     private fun observeEffects() {
         viewModel.uiEffects.observe(viewLifecycleOwner) { effect ->
             when (effect) {
-                InitialUiEffects.NextScreen -> binding?.root?.let { rootView ->
+                SaveUserUiEffects.NextScreen -> binding?.root?.let { rootView ->
                     Snackbar.make(
                         rootView,
                         "Next screen",
                         BaseTransientBottomBar.LENGTH_SHORT
                     ).show() //TODO Navigation to next fragment
                 }
-                is InitialUiEffects.SnackBarError -> binding?.root?.let { rootView ->
+                is SaveUserUiEffects.SnackBarError -> binding?.root?.let { rootView ->
                     Snackbar.make(
                         rootView,
                         effect.friendlyMessage,
                         BaseTransientBottomBar.LENGTH_SHORT
                     ).show()
                 }
-                is InitialUiEffects.SnackBarSuccess -> binding?.root?.let { rootView ->
+                is SaveUserUiEffects.SnackBarSuccess -> binding?.root?.let { rootView ->
                     Snackbar.make(
                         rootView,
                         effect.message,
